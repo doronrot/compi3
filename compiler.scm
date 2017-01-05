@@ -159,9 +159,9 @@
          (cond ((null? exp_part) #f)
                ((equal? exp_part `(var ,suspected_var)) #t)
                ((atom? exp_part) #f)
-               ((and (equal? (car exp_part) 'set) 
-                     (equal? (cadadr exp_part) suspected_var))
-                  #f)
+               ((equal? (car exp_part) 'set) 
+                     ;(equal? (cadadr exp_part) suspected_var)
+                  (is_exist_get? (caddr exp_part) suspected_var))
                ((and (is_lambda_exp? exp_part)
                      (member suspected_var (find_lambda_vars_op exp_part)))
                   #f)
@@ -243,9 +243,10 @@
                	   (cons 'box-get
               		   (list exp_part)))
                ((atom? exp_part) exp_part)
-               ((and (equal? (car exp_part) 'box-set) 
-                     (equal? (cadadr exp_part) suspected_var))
-                  exp_part)
+               ((equal? (car exp_part) 'box-set) 
+                   `(box-set
+                     ,(cadr exp_part)
+                  	 ,(put_get_boxes (caddr exp_part) suspected_var)))
                ((and (is_lambda_exp? exp_part)
                      (member suspected_var (find_lambda_vars_op exp_part)))
                   exp_part)
@@ -253,26 +254,20 @@
                            (put_get_boxes (cdr exp_part) suspected_var))))))
 
 
+; (define create_set_box_body 
+; 	(lambda (should_box_vars boxed_body_exp)
+;       `(seq ,(append (map make_set should_box_vars)
+; 								  boxed_body_exp))))
+;;;;
 (define create_set_box_body 
 	(lambda (should_box_vars boxed_body_exp)
-		`(seq ,(append (map make_set should_box_vars)
-				boxed_body_exp))))
-;; could be another seq inside 
+      (flat_seq `(seq ,(append (map make_set should_box_vars)
+								  boxed_body_exp)))))
+
 
 (define make_set
 	(lambda (var_to_box)
 		`(set (var ,var_to_box) (box (var ,var_to_box))) ))
-
-
-; (define flat_seq
-; 	(lambda (exp)
-; 		(if (or (null? exp) (atom? exp))
-; 			exp
-; 			(if (equal? (car exp) 'seq)
-; 				(flat_seq (cadr exp))
-; 				(cons (flat_seq (car exp))
-; 					  (flat_seq (cdr exp))))
-; 			)))
 
 			
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Pe->Lex-Pe ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -393,56 +388,80 @@
 
 (define annotate-tc
 	(lambda (parsed_exp)
-		parsed_exp))							  
+		(annotate-tc-helper parsed_exp #f)))
+
+
+(define annotate-tc-helper
+	(lambda (parsed_exp tp?)
+		(cond ((or (null? parsed_exp) (atom? parsed_exp))
+				 parsed_exp)
+			  ;const var
+			  ((member (car parsed_exp) '(pvar bvar fvar const))
+			     parsed_exp)
+			  ;applic
+			  ((equal? (car parsed_exp) 'applic)
+			  	 (if tp?
+			  	 	 `(tc-applic ,@(annotate-tc-helper (cdr parsed_exp) #f))
+			  	 	 `(applic ,@(annotate-tc-helper (cdr parsed_exp) #f))))
+			  ;or
+			  ((equal? (car parsed_exp) 'or)
+			  	 (let* ((or_exps (cadr parsed_exp))
+			  	 		(annotate_or_exps (annotate_or or_exps tp?)))
+			  	    `(or ,annotate_or_exps)))
+
+			  ;seq
+			  ((equal? (car parsed_exp) 'seq)
+			  	 (let* ((seq_exps (cadr parsed_exp))
+			  	 		(annotate_seq_exps (annotate_seq seq_exps tp?)))
+			  	    `(seq ,annotate_seq_exps)))
+			  ;if
+			  ((equal? (car parsed_exp) 'if3)
+			  	 (let ((test (cadr parsed_exp))
+			  	 	   (dit (caddr parsed_exp))
+			  	 	   (dif (cadddr parsed_exp)))
+			  	 	`(if3 ,(annotate-tc-helper test #f) 
+			  	 		  ,(annotate-tc-helper dit tp?)
+			  	 		  ,(annotate-tc-helper dif tp?))))
+			  ;def
+			  ((equal? (car parsed_exp) 'def)
+			  	 (let ((def_var (cadr parsed_exp))
+			  	 	   (def_exp (caddr parsed_exp)))
+			  	 	`(def ,def_var ,(annotate-tc-helper def_exp #f))))
+			  ;lambda
+			  ((is_lambda_exp? parsed_exp)
+			  	 (let ((lambda_type (car parsed_exp))
+			  	 	   (lambda_vars (find_lambda_vars_show  parsed_exp))
+			  	 	   (lambda_body (car (find_lambda_body  parsed_exp))))
+			  	 	`(,lambda_type ,@lambda_vars ,(annotate-tc-helper lambda_body #t))))
+			  (else 
+			  	 (cons (annotate-tc-helper (car parsed_exp) tp?)
+			  	 	   (annotate-tc-helper (cdr parsed_exp) tp?)))
+		)))
+
+(define annotate_or
+	(lambda (or_exps tp?)
+		(if (null? (cdr or_exps))
+			(annotate-tc-helper or_exps tp?)
+			(cons (annotate-tc-helper (car or_exps) #f)
+				  (annotate_or (cdr or_exps) tp?)))))
+
+
+(define annotate_seq
+	(lambda (seq_exps tp?)
+		(if (null? (cdr seq_exps))
+			(annotate-tc-helper seq_exps tp?)
+			(cons (annotate-tc-helper (car seq_exps) #f)
+				  (annotate_seq (cdr seq_exps) tp?)))))
+
+
+
 					 
+; Annotate(expr , tp?):
+; If expr is Var or Const, return expr.
+; Else if expr is Applic,
+; If tp? is true , return TCApplic(Annotate(children, #f))
+; Else return Applic(Annotate(children,#f))
 
+; Else return expr with its children annotated according to the various rules.
 
-
-;;;;;;; flat seq yalla cvar  ;;;;;;;
-; (define flat_seq2
-; 	(lambda (exp)
-; 		(if (or (null? exp) (atom? exp))
-; 			exp
-; 			(if (or (null? (car exp)) (atom? (car exp)))
-; 				####something
-; 				(if (equal? (caar exp) 'seq)
-; 					`(seq  ,(flat_seq_helper (cadar exp)))
-; 					(cons (flat_seq (car exp))
-; 						  (flat_seq (cdr exp)))
-; 					))
-; 			)))
-
-(define flat_seq_helper2
-  (lambda (lst)
-    (cond 
-    	((or (null? lst) (atom? lst))
-    		lst)
-    	((and (list? (car lst)) 
-    		  (equal? (caar lst) 'seq))
-    	   `(,@(flat_seq_helper2 (cadar lst)) ,@(flat_seq_helper2 (cdr lst))))
-    	((equal? (car lst) 'seq)
-    		(flat_seq_helper2 (cadr lst)))
-    	(else 
-    		`(,(flat_seq_helper2 (car lst)) ,@(flat_seq_helper2 (cdr lst)))))))
-
-
-(define flat_seq
-	(lambda (exp)
-		(if (or (null? exp) (atom? exp))
-			exp
-			(if (equal? (car exp) 'seq)
-				`(seq  ,(flat_seq_helper2 (cadr exp)))
-				(cons (flat_seq (car exp))
-					  (flat_seq (cdr exp))))
-			)))
-
-(define flat_seq_helper
-	(lambda (seq_exp_body)
-		(if (or (null? seq_exp_body) (atom? seq_exp_body))
-			 seq_exp_body
-			 (if (equal? (car seq_exp_body) 'seq)
-			 	 (flat_seq_helper (cadr seq_exp_body))
-			 	 ; (append (cadr seq_exp_body)	;list of seq
-			 	 ; 		 (flat_seq_helper (cdr seq_exp_body)))	;list that?
-			     (cons (flat_seq_helper (car seq_exp_body))
-				 	   (flat_seq_helper (cdr seq_exp_body))) ))))
+; The rst call (to the root of the AST) should be with tp? = #f.
