@@ -1,7 +1,123 @@
    
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  pbf vars   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+(add_fvars (put_pvar (find_lambda_body (box-set (remove-applic-lambda-nil (parse '(lambda (a) (set! a 3)
+            a
+            (lambda () a))))))
+          'a
+          0))
+
+(pe->lex-pe
+  (box-set 
+    (remove-applic-lambda-nil 
+      (eliminate-nested-defines 
+        (parse 
+
+        '
+ (lambda (x) (set! x 6) (lambda (y) x))
+
+          )))))
+
+
+ (lambda (x) (set! x 6) (lambda (y) x))
+
+  (pe->lex-pe (parse '(lambda (a . d) a d e)))
+
+   (pe->lex-pe '(set! x (f 1)))
+
+ (find_lambda_vars_op (parse '(lambda (a . d) a)))
+
+(put_pvar  (parse '(lambda (a) (set! a 3)
+            a
+            (lambda () a)))
+          'a)
+
+
+(a)
+
+(find_lambda_vars (parse '(lambda (a b) a)))
+
+(find_lambda_vars (parse '(lambda (a . b) a)))
+
+
+;;;;;; flat seq  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(parse '(define foo
+            (lambda (a b c)
+              (begin 1 2 (begin 3 (begin 4) 5 (begin (begin 6 7) 8 9)) 10))))
+
+(def (var foo)
+     (lambda-simple
+       (a b c)
+       (seq ((const 1)
+              (const 2)
+              (seq ((const 3)
+                     (const 4)
+                     (const 5)
+                     (seq ((seq ((const 6) (const 7)))
+                            (const 8)
+                            (const 9)))))
+              (const 10)))))
+
+(define flat_begin
+  (lambda (lst)
+    (cond 
+    	((null? lst) 
+    		'())
+    	((and (list? (car lst)) (equal? (caar lst) 'seq))
+    		`(,@(flat_begin(cdar lst)) ,@(flat_begin (cdr lst))))
+    	((equal? (car lst) 'seq) 
+    		(flat_begin (cdr lst)))
+    	(else 
+    		`(,(car lst) ,@(flat_begin (cdr lst)))))))
+
+ ex1
+(def (var foo)
+     (lambda-simple
+       (a b c)
+       (seq ((const 1)
+              (const 2)
+              (seq ((const 3)
+                     (const 4)
+                     (const 5)
+                     (seq ((seq ((const 6) (const 7)))
+                            (const 8)
+                            (const 9)))))
+              (const 10)))))
+
+ex2
+(seq ((const 1) (const 2) (const 3)))
+
+ex22
+(seq ((const 0) (seq ((const 1) (const 2) (const 3)))))
+
+ex3
+(lambda-simple
+  (a b)
+  (seq ((const 1)
+         (const 2)
+         (seq ((const 3) (const 4) (const 5)))
+         (const 6)
+         (const 7))))
+ex4
+(seq ((const 1)
+              (const 2)
+              (seq ((const 3)
+                     (const 4)
+                     (const 5)
+                     (seq ((seq ((const 6) (const 7)))
+                            (const 8)
+                            (const 9)))))
+              (const 10)))
+
+ex6 to parse 
+'(define goo
+	(lambda args
+		(let ((x 5) 
+			  (y 6)
+			  (z args))
+		   (begin 1 2 (+ 1 2) 3 (begin 4 (begin 5 6 (begin) (begin) (begin 7)) 8 9) 10 11))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  box   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
