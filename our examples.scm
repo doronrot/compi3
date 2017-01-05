@@ -1,4 +1,43 @@
    
+;;;;;;;;;;;;;;;;;;;;;;;;   annotate tc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(x 
+  (lambda (x) (x 
+                (lambda () (x 
+                             (lambda () (x x))
+                             )))))
+
+(annotate-tc 
+ (pe->lex-pe
+  (box-set 
+    (remove-applic-lambda-nil 
+      (eliminate-nested-defines 
+          (parse  '
+
+
+            ))))))
+
+(define my-even? 
+  (lambda (e) 
+    (define even? 
+      (lambda (n) 
+        (or (zero? n) (odd? (- n 1))) )) 
+    #t))
+
+ (annotate-tc 
+    '(or ((applic (fvar zero?) ((pvar n 0)))
+        (applic (fvar odd?) ((applic (fvar -) ((pvar n 0) (const 1))))))))
+
+
+ (lambda (x y) ((lambda (a b c) a b c) 5 6 7) x y)
+
+ (or (zero? n) (odd? (- n 1)))
+
+(lambda (x y) 
+  (lambda (z) 
+    (set! x x) 
+    (set! y 2)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  pbf vars   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,12 +52,12 @@
   (box-set 
     (remove-applic-lambda-nil 
       (eliminate-nested-defines 
-        (parse 
+          (parse 
 
         '
  (lambda (x) (set! x 6) (lambda (y) x))
 
-          )))))
+          ))))))
 
 
  (lambda (x) (set! x 6) (lambda (y) x))
@@ -118,6 +157,11 @@ ex6 to parse
 			  (y 6)
 			  (z args))
 		   (begin 1 2 (+ 1 2) 3 (begin 4 (begin 5 6 (begin) (begin) (begin 7)) 8 9) 10 11))))
+
+'(begin 1 (+ 2 (begin 3 4)))
+'(begin 1 2 (if x (begin 3 4))
+(begin 1 (and q (begin 3 (begin  4 5) 5 )))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  box   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
