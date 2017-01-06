@@ -15,7 +15,17 @@
           (parse  '
 
 
+(lambda () 
+     (define foo 
+        (lambda (x) 
+           (set! foo 4)))
+     (foo 1))
+
+
             ))))))
+
+
+
 
 (define my-even? 
   (lambda (e) 
@@ -37,6 +47,93 @@
   (lambda (z) 
     (set! x x) 
     (set! y 2)))
+
+
+(let* ((c 0) (a (box c)))
+  (list (lambda () a) 
+        (lambda () 
+           (set! a (+ a 1)))
+        (lambda (b) 
+           (set! a b))))
+
+(lambda (a b c d e f g h i j k lmnop q r stuv w . xyz)
+  xyz 
+  (lambda (k j) 
+     ((lambda () j) k))
+  (i h) 
+  g 
+  f 
+  free-var1 
+  (e d c b ((((a))))))
+
+(lambda (a b c d e f g h i j k lmnop q r stuv w . xyz)
+  xyz)
+
+((lambda () j) k)
+
+
+;;;;; last test bli neder ;;;;;
+ (lambda (a b c) 
+   (begin 
+     (begin (begin (define foo 
+                          (lambda (x) 
+                             (set! foo 4) 
+                             (+ x x))) 
+                        (define goo 
+                           (lambda (y) 
+                              (define foo 
+                                 (* a b)) (* foo b)))))
+     (define t5 
+       (lambda (x) 
+          (begin (define x 6) 
+                 (set! goo 5) 
+                 (set! f 50) (* a x)))) 
+     (begin (define f 
+              (lambda (d) 
+                 (* d d d))) 
+            (begin (define h 
+                        (lambda (f g) 
+                           (if (or (even? g) (even? g) (even (+ f g))) f g)))))) 
+   (* (foo (goo (* a x))) (f (* b c))))
+
+
+
+(lambda (a b c) 
+   (begin 
+     (begin (begin (define foo 
+                          (lambda (x) 
+                             (set! foo 4) 
+                             (+ x x))) 
+                        ; (define goo 
+                        ;    (lambda (y) 
+                        ;       (define foo 
+                        ;          (* a b)) (* foo b)))
+                        5
+                        )))
+   (* (foo (goo 1)) 1))
+
+;bt
+(lambda-simple
+  ()
+  (applic
+    (lambda-simple
+      (foo)
+      (seq ((set (var foo)
+                 (lambda-simple (x) (set (var foo) (const 4))))
+            (applic (var foo) ((const 1))) )) )
+    ((const #f))))
+
+(is_exist_get? bt1 'foo)
+
+(lambda-simple
+      (foo)
+      (seq ((set (var foo)
+                 (lambda-simple (x) (set (var foo) (const 4))))
+            (applic (var foo) ((const 1))) )) )
+
+
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  pbf vars   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
