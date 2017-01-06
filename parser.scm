@@ -93,7 +93,7 @@
 
     	((equal? (car exp) 'seq)
     		(flat_seq_helper2 (cadr exp)))
-    	
+
     	((and (list? (car exp))
     	 	  (not (null? (car exp))) 
     		  (equal? (caar exp) 'seq))
@@ -200,12 +200,6 @@
                               (if (null? exprs)
                               	  (parse-2 expr)
  							   	  (flat_seq `(seq ,(map parse-2 (cons expr exprs)))))))
-					; (pattern-rule
-  			; 			`(begin ,(? 'expr).,(? 'exprs))
-  			; 			(lambda (expr exprs)
-     ;                          (if (null? exprs)
-     ;                          	  (parse-2 expr)
- 				; 			   	  `(seq ,(map parse-2 (cons expr exprs))))))
                      
 					;Variables;
 					(pattern-rule
