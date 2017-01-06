@@ -1,7 +1,7 @@
 (load "parser.scm")
 
-;TDL:
-; hw2 completion - handle nested begin. beginSeq
+;TODO: 
+;	remove old code lines	(marked with ;TODO; for our convenience)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Eliminate-Nested-Defines ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -104,7 +104,7 @@
 					  (applic_args (find_applic_args parsed_exp)))
 					(if(null? applic_args)
 					   (remove-applic-lambda-nil  lambda_nil_body)
-				   	   ;`(applic ,(remove-applic-lambda-nil  lambda_nil_body) ,applic_args)))
+				   	   ;`(applic ,(remove-applic-lambda-nil  lambda_nil_body) ,applic_args)))		;TODO remove
 					   parsed_exp))
 				(cons (remove-applic-lambda-nil  (car parsed_exp))
 					  (remove-applic-lambda-nil  (cdr parsed_exp)))))))
@@ -115,13 +115,12 @@
 			   (lambda_nil_body (caddr lambda_nil)))
 			lambda_nil_body)))
 
+;changed 6.1
 (define is_redundant?
 	(lambda (parsed_exp)
-		(if (and (equal? (car parsed_exp) 'applic)
-				 (equal? (caadr parsed_exp) 'lambda-simple)
-				 (equal? (cadadr parsed_exp) (list)))
-			#t
-			#f)))
+		(and (equal? (car parsed_exp) 'applic)
+			 (equal? (caadr parsed_exp) 'lambda-simple)
+			 (equal? (cadadr parsed_exp) (list)))))
 
 (define find_applic_args
 	(lambda (applic_parsed_exp)
@@ -129,6 +128,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Box-Set ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define box-set 
 	(lambda (parsed_exp)
 		(if (or (null? parsed_exp)(atom? parsed_exp))
@@ -152,17 +152,15 @@
                        (lambda_type (car parsed_lambda_exp))
                        (lambda_vars_show (find_lambda_vars_show parsed_lambda_exp)))
                     `(,lambda_type ,@lambda_vars_show  ,body_sets_and_boxes))))))
-            
+
+;changed 6.1      
 (define should_box_var?
     (lambda (lambda_body)
         (lambda (lambda_var)
-            (if (and (is_exist_get? lambda_body lambda_var)
-                     (is_exist_set? lambda_body lambda_var)
-                     (is_exist_bound? lambda_body lambda_var))
-                #t
-                #f))))
+	    	 (and (is_exist_get? lambda_body lambda_var)
+	             (is_exist_set? lambda_body lambda_var)
+	             (is_exist_bound? lambda_body lambda_var)))))
  
-
 (define is_exist_get?
     (lambda (exp_part suspected_var)
          (cond ((null? exp_part) #f)
@@ -170,47 +168,15 @@
                ((equal? exp_part `(var ,suspected_var)) #t)
                ((atom? exp_part) #f)
                ;set exp
-               ((equal? (car exp_part) 'set) 
-                     ;(equal? (cadadr exp_part) suspected_var)
-                  (is_exist_get? (caddr exp_part) suspected_var)) ;caddr= set exp
+               ((equal? (car exp_part) 'set)
+                     ;(equal? (cadadr exp_part) suspected_var)										;TODO remove
+                  (is_exist_get? (caddr exp_part) suspected_var))
                ;lambda parameter
                ((and (is_lambda_exp? exp_part)
                      (member suspected_var (find_lambda_vars_op exp_part)))
                   #f)
                (else (or (is_exist_get? (car exp_part) suspected_var)
                          (is_exist_get? (cdr exp_part) suspected_var))))))
-
-; (define is_exist_get?
-;     (lambda (exp_part suspected_var)
-;          (cond ((null? exp_part) 
-;          		   (begin (display 'null) (newline) #f))
-;          	   ;is var
-;                ((equal? exp_part `(var ,suspected_var)) 
-;                	   (begin (display 'is_var)(newline) 
-;                	   		  (display suspected_var) (newline) 
-;                	   		  #t))
-;                ((atom? exp_part) 
-;                	   (begin (display 'atom)(newline) 
-;                	   		  (display exp_part) (newline)
-;                	   		  #f))
-;                ;set exp
-;                ((equal? (car exp_part) 'set) 
-;                      ;(equal? (cadadr exp_part) suspected_var)
-;               	   (begin (display 'set)(newline)
-;               	   		  (display exp_part)(newline)
-;    	   	                  (is_exist_get? (caddr exp_part) suspected_var)) ;caddr= set exp
-; 				)
-;                ;lambda parameter
-;                ((and (is_lambda_exp? exp_part)
-;                      (member suspected_var (find_lambda_vars_op exp_part)))
-;                	   (begin (display 'lambda)(newline)
-;                	   		  (display exp_part)(newline)
-;                	   		  #f))
-;                (else (begin (display 'else) (newline)
-;                				(display exp_part) (newline)
-;                				(or (is_exist_get? (car exp_part) suspected_var)
-;                          	    (is_exist_get? (cdr exp_part) suspected_var)))))))
-; (put_set_boxes (cdr exp_part))))
                     
 (define is_exist_set?
      (lambda (exp_part suspected_var)
@@ -222,8 +188,8 @@
 			  ((and (is_lambda_exp? exp_part)
                     (member suspected_var (find_lambda_vars_op exp_part)))
 			     #f)
-              (else (or (is_exist_set? (cdr exp_part) suspected_var)
-                        (is_exist_set? (car exp_part) suspected_var))))))
+              (else (or (is_exist_set? (car exp_part) suspected_var)
+                        (is_exist_set? (cdr exp_part) suspected_var))))))
                  
 (define is_exist_bound?
      (lambda (exp_part suspected_var)
@@ -231,8 +197,8 @@
         	#f
         	(if (is_lambda_exp? exp_part)
         		(is_exist_bound_helper? exp_part suspected_var)
-        		(or (is_exist_bound? (cdr exp_part) suspected_var)
-                	(is_exist_bound? (car exp_part) suspected_var))))))
+        		(or (is_exist_bound? (car exp_part) suspected_var)
+                	(is_exist_bound? (cdr exp_part) suspected_var))))))
 
 (define is_exist_bound_helper?
     (lambda (exp_part suspected_var)
@@ -245,8 +211,8 @@
                ((and (is_lambda_exp? exp_part)
                      (member suspected_var (find_lambda_vars_op exp_part)))
                   #f)
-               (else (or (is_exist_bound_helper? (cdr exp_part) suspected_var)
-                         (is_exist_bound_helper? (car exp_part) suspected_var))))))
+               (else (or (is_exist_bound_helper? (car exp_part) suspected_var)
+                         (is_exist_bound_helper? (cdr exp_part) suspected_var))))))
 
 (define put_boxes
     (lambda (should_box_vars lambda_body)
@@ -261,7 +227,6 @@
         (let* ((with_set_boxes (put_set_boxes lambda_body should_box_var))
                (with_get_and_set_boxes (put_get_boxes with_set_boxes should_box_var)))
             with_get_and_set_boxes)))
-            
         
 ;returns body with sets for this var
 (define put_set_boxes
@@ -278,7 +243,6 @@
 			     exp_part)
               (else (cons (put_set_boxes (car exp_part) suspected_var)
                           (put_set_boxes (cdr exp_part) suspected_var))))))
-
 
 (define put_get_boxes
     (lambda (exp_part suspected_var)
@@ -297,17 +261,10 @@
                (else (cons (put_get_boxes (car exp_part) suspected_var)
                            (put_get_boxes (cdr exp_part) suspected_var))))))
 
-
-; (define create_set_box_body 
-; 	(lambda (should_box_vars boxed_body_exp)
-;       `(seq ,(append (map make_set should_box_vars)
-; 								  boxed_body_exp))))
-;;;;
 (define create_set_box_body 
 	(lambda (should_box_vars boxed_body_exp)
       (flat_seq `(seq ,(append (map make_set should_box_vars)
 								  boxed_body_exp)))))
-
 
 (define make_set
 	(lambda (var_to_box)
@@ -359,7 +316,7 @@
                (with_pvar_and_bvar (put_bvar with_pvar var minor)))
             with_pvar_and_bvar)))
 
-;find all apperances of var as the current lambda parameter
+;find all appearances of var as a current lambda parameter
 (define put_pvar
     (lambda (exp_part var minor)	;lambda_body_exp
         (cond ((null? exp_part) exp_part)
@@ -369,7 +326,7 @@
               ((and (equal? (car exp_part) 'box-set)           
                     (equal? (cadadr exp_part) var))  
                 `(box-set (pvar ,var ,minor) ,(caddr exp_part)))
-              ; ((equal? (car exp_part) 'box)           
+              ; ((equal? (car exp_part) 'box)           											;TODO remove
               ;       exp_part)
               ((is_lambda_exp? exp_part)
                 exp_part)
@@ -391,7 +348,7 @@
                ((equal? exp_part_pvar `(var ,var))
                		`(bvar ,var ,major ,minor))
                ((atom? exp_part_pvar) exp_part_pvar)
-               ; ((and (equal? (car exp_part_pvar) 'box-set) 
+               ; ((and (equal? (car exp_part_pvar) 'box-set) 										;TODO remove
                ;       (equal? (cadadr exp_part_pvar) var))
                ;    `(bvar ,var ,major ,minor))
                ((and (is_lambda_exp? exp_part_pvar)
@@ -416,7 +373,7 @@
 	(lambda (lambda_expr)
 		 (cond ((equal? (car lambda_expr) 'lambda-opt)
 				  `(,@(cadr lambda_expr) ,(caddr lambda_expr)))  
-		 			; (append (cadr lambda_expr) (list (caddr lambda_expr))))
+		 			; (append (cadr lambda_expr) (list (caddr lambda_expr))))						;TODO remove
 			   ((equal? (car lambda_expr) 'lambda-simple)
 					   (cadr lambda_expr))
 			   (else (list (cadr lambda_expr))))))
@@ -427,14 +384,12 @@
 			(list (cadr lambda_expr) (caddr lambda_expr))  
 			(list (cadr lambda_expr)))))
         
-    
 					  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Annotate-Tc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define annotate-tc
 	(lambda (parsed_exp)
 		(annotate-tc-helper parsed_exp #f)))
-
 
 (define annotate-tc-helper
 	(lambda (parsed_exp tp?)
@@ -453,7 +408,6 @@
 			  	 (let* ((or_exps (cadr parsed_exp))
 			  	 		(annotate_or_exps (annotate_or or_exps tp?)))
 			  	    `(or ,annotate_or_exps)))
-
 			  ;seq
 			  ((equal? (car parsed_exp) 'seq)
 			  	 (let* ((seq_exps (cadr parsed_exp))
@@ -496,7 +450,6 @@
 			(cons (annotate-tc-helper (car or_exps) #f)
 				  (annotate_or (cdr or_exps) tp?)))))
 
-
 (define annotate_seq
 	(lambda (seq_exps tp?)
 		(if (null? (cdr seq_exps))
@@ -504,15 +457,3 @@
 			(cons (annotate-tc-helper (car seq_exps) #f)
 				  (annotate_seq (cdr seq_exps) tp?)))))
 
-
-
-					 
-; Annotate(expr , tp?):
-; If expr is Var or Const, return expr.
-; Else if expr is Applic,
-; If tp? is true , return TCApplic(Annotate(children, #f))
-; Else return Applic(Annotate(children,#f))
-
-; Else return expr with its children annotated according to the various rules.
-
-; The rst call (to the root of the AST) should be with tp? = #f.
